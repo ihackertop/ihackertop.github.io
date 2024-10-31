@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    <meta name="author" content="S.N.T">
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="https://blog.ihacker.top/archives/8fc0c4d921ce.html"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+        <meta name="description" content="SPF介绍spf是一种用于防止电子邮件伪造得技术，旨在确保只有授权的发送者才能适用特定的域名发送电子邮件，它也是邮件系统的一种安全机制，它的内容被写入DNS的TXT类型记录中。通过SPF记录，域名所有者可以指定哪些IP地址或服务器被授权代表该域名发送电子邮件。  防止伪造邮件地址：SPF通过验证发件人的IP地址是否被包含在SPF记录中，来防止他人伪造你的邮件地址发送垃圾邮件或进行网络钓鱼攻击。 提">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浅谈骇客是如何利用SPF机制进行邮件钓鱼的">
+<meta property="og:url" content="https://blog.ihacker.top/archives/8fc0c4d921ce.html">
+<meta property="og:site_name" content="SecurityNode">
+<meta property="og:description" content="SPF介绍spf是一种用于防止电子邮件伪造得技术，旨在确保只有授权的发送者才能适用特定的域名发送电子邮件，它也是邮件系统的一种安全机制，它的内容被写入DNS的TXT类型记录中。通过SPF记录，域名所有者可以指定哪些IP地址或服务器被授权代表该域名发送电子邮件。  防止伪造邮件地址：SPF通过验证发件人的IP地址是否被包含在SPF记录中，来防止他人伪造你的邮件地址发送垃圾邮件或进行网络钓鱼攻击。 提">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407111514131.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407111614082.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407111626338.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121437392.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407111648386.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407112020619.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407112013325.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407112017905.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121412466.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121413354.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121418507.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121423982.png">
+<meta property="og:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121429326.png">
+<meta property="article:published_time" content="2024-10-31T14:35:31.000Z">
+<meta property="article:modified_time" content="2024-10-31T09:29:55.747Z">
+<meta property="article:author" content="S.N.T">
+<meta property="article:tag" content="邮件">
+<meta property="article:tag" content="SPF">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://blog.ihacker.top/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407111514131.png">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.svg">
+    <meta name="theme-color" content="#F90">
+    <link rel="shortcut icon" href="/favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            浅谈骇客是如何利用SPF机制进行邮件钓鱼的 | SecurityNode
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/assets/build/styles.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+        
+<script src="/js/libs/anime.min.js"></script>
+
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"blog.ihacker.top","root":"/","language":"zh-cn"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":["LvMAX"]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":false,"default":"cc_by_nc_sa"},"lazyload":true,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#F90","secondary":null,"default_mode":"dark"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":false,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":true,"custom_message":"Security Node Team"},"open_graph":true,"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/bg-light.webp","dark":"/images/bg-dark.webp"},"title":"〔 安全节点 〕","subtitle":{"text":["There is no absolutely secure system."],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":false,"style":"default","links":{"github":null,"instagram":null,"zhihu":null,"twitter":null,"email":null},"qrs":{"weixin":null}}},"plugins":{"feed":{"enable":true},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"enable":false,"version":"9.3.0"}},"version":"2.7.3","navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"},"Archives":{"icon":"fa-solid fa-archive","path":"/archives/"},"Categories":{"icon":"fa-solid fa-folder","path":"/categories/"},"Tags":{"icon":"fa-solid fa-tags","path":"/tags/"}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur"},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":null,"show_on_mobile":true,"links":{"Archives":{"path":"/archives","icon":"fa-regular fa-archive"},"Categories":{"path":"/categories","icon":"fa-regular fa-folder"},"Tags":{"path":"/tags","icon":"fa-regular fa-tags"}}},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footerStart":false};
+    window.lang_ago = {"second":"%s seconds ago","minute":"%s minutes ago","hour":"%s hours ago","day":"%s days ago","week":"%s weeks ago","month":"%s months ago","year":"%s years ago"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 7.3.0"><link rel="alternate" href="/atom.xml" title="SecurityNode" type="application/atom+xml">
+</head>
+
+
+<body>
+<div class="progress-bar-container">
+    
+
+    
+        <span class="pjax-progress-bar"></span>
+<!--        <span class="swup-progress-icon">-->
+<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+<!--        </span>-->
+    
+</div>
+
+
+
+    <style>
+    :root {
+        --preloader-background-color: #fff;
+        --preloader-text-color: #000;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --preloader-background-color: #202124;
+            --preloader-text-color: #fff;
+        }
+    }
+
+    @media (prefers-color-scheme: light) {
+        :root {
+            --preloader-background-color: #fff;
+            --preloader-text-color: #000;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .ml13 {
+            font-size: 2.6rem !important; /* Adjust this value as needed */
+        }
+    }
+
+    .preloader {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem; /* Tailwind 'gap-4' is 1rem */
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        padding: 12px;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh; /* 'h-screen' is 100% of the viewport height */
+        background-color: var(--preloader-background-color);
+        z-index: 1100; /* 'z-[1100]' sets the z-index */
+        transition: opacity 0.2s ease-in-out;
+    }
+
+    .ml13 {
+        font-size: 3.2rem;
+        /* text-transform: uppercase; */
+        color: var(--preloader-text-color);
+        letter-spacing: -1px;
+        font-weight: 500;
+        font-family: 'Chillax-Variable', sans-serif;
+        text-align: center;
+    }
+
+    .ml13 .word {
+        display: inline-flex;
+        flex-wrap: wrap;
+        white-space: nowrap;
+    }
+
+    .ml13 .letter {
+        display: inline-block;
+        line-height: 1em;
+    }
+</style>
+
+<div class="preloader">
+    <h2 class="ml13">
+        Security Node Team
+    </h2>
+    <script>
+        var textWrapper = document.querySelector('.ml13');
+        // Split text into words
+        var words = textWrapper.textContent.trim().split(' ');
+
+        // Clear the existing content
+        textWrapper.innerHTML = '';
+
+        // Wrap each word and its letters in spans
+        words.forEach(function(word) {
+            var wordSpan = document.createElement('span');
+            wordSpan.classList.add('word');
+            wordSpan.innerHTML = word.replace(/\S/g, "<span class='letter'>$&</span>");
+            textWrapper.appendChild(wordSpan);
+            textWrapper.appendChild(document.createTextNode(' ')); // Add space between words
+        });
+
+        var animation = anime.timeline({ loop: true })
+            .add({
+                targets: '.ml13 .letter',
+                translateY: [20, 0],
+                translateZ: 0,
+                opacity: [0, 1],
+                filter: ['blur(5px)', 'blur(0px)'],
+                easing: "easeOutExpo",
+                duration: 1200,
+                delay: (el, i) => 300 + 20 * i,
+            })
+            .add({
+                targets: '.ml13 .letter',
+                translateY: [0, -20],
+                opacity: [1, 0],
+                filter: ['blur(0px)', 'blur(5px)'],
+                easing: "easeInExpo",
+                duration: 1000,
+                delay: (el, i) => 15 * i,
+                complete: function() {
+                    hidePreloader();
+                }
+            }, '-=700');
+
+
+        let themeStatus = JSON.parse(localStorage.getItem('REDEFINE-THEME-STATUS'))?.isDark;
+
+        // If the theme status is not found in local storage, check the preferred color scheme
+        if (themeStatus === undefined || themeStatus === null) {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                themeStatus = 'dark';
+            } else {
+                themeStatus = 'light';
+            }
+        }
+
+        // Now you can use the themeStatus variable in your code
+        if (themeStatus) {
+            document.documentElement.style.setProperty('--preloader-background-color', '#202124');
+            document.documentElement.style.setProperty('--preloader-text-color', '#fff');
+        } else {
+            document.documentElement.style.setProperty('--preloader-background-color', '#fff');
+            document.documentElement.style.setProperty('--preloader-text-color', '#000');
+        }
+
+        window.addEventListener('load', function () {
+            setTimeout(hidePreloader, 5000); // Call hidePreloader after 5000 milliseconds if not already called by animation
+        });
+
+        function hidePreloader() {
+            var preloader = document.querySelector('.preloader');
+            preloader.style.opacity = '0';
+            setTimeout(function () {
+                preloader.style.display = 'none';
+            }, 200);
+        }
+    </script>
+</div>
+
+<main class="page-container" id="swup">
+
+    
+
+    <div class="main-content-container flex flex-col justify-between min-h-dvh">
+
+
+        <div class="main-content-header">
+            <header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                SecurityNode
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    HOME
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class="active"
+                                   href="/archives/"
+                                        >
+                                    <i class="fa-solid fa-archive fa-fw"></i>
+                                    ARCHIVES
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/categories/"
+                                        >
+                                    <i class="fa-solid fa-folder fa-fw"></i>
+                                    CATEGORIES
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/tags/"
+                                        >
+                                    <i class="fa-solid fa-tags fa-fw"></i>
+                                    TAGS
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                HOME
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full active"
+                           href="/archives/"
+                        >
+                            <span>
+                                ARCHIVES
+                            </span>
+                            
+                                <i class="fa-solid fa-archive fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/categories/"
+                        >
+                            <span>
+                                CATEGORIES
+                            </span>
+                            
+                                <i class="fa-solid fa-folder fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/tags/"
+                        >
+                            <span>
+                                TAGS
+                            </span>
+                            
+                                <i class="fa-solid fa-tags fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+
+            
+            
+                
+                    
+                    
+                    
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">9</div>
+        <div class="label text-third-text-color text-sm">Tags</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">3</div>
+        <div class="label text-third-text-color text-sm">Categories</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">8</div>
+        <div class="label text-third-text-color text-sm">Posts</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+        </div>
+
+        <div class="main-content-body">
+
+            
+
+            <div class="main-content">
+
+                
+                    <div class="post-page-container flex relative justify-between box-border w-full h-full">
+    <div class="article-content-container">
+
+        <div class="article-title relative w-full">
+            
+                
+                
+                <img src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/8e701dfcf888bc08ca9c25f8090ff6ef.png" alt="浅谈骇客是如何利用SPF机制进行邮件钓鱼的" class="w-full h-60 sm:h-72 md:h-80 object-cover sm:rounded-t-large dark:brightness-75"/>
+                
+                <div class="w-full flex items-center absolute bottom-0 justify-start">
+                    <h1 class="article-title-cover text-center mx-6 my-6 text-second-text-color bg-background-color-transparent px-4 py-3 text-3xl sm:text-4xl md:text-5xl font-semibold backdrop-blur-lg rounded-xl border border-border-color ">浅谈骇客是如何利用SPF机制进行邮件钓鱼的</h1>
+                </div>
+            
+            </div>
+
+        
+            <div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+                <div class="avatar w-[46px] h-[46px] flex-shrink-0 rounded-medium border border-border-color p-[1px]">
+                    <img src="/favicon.svg">
+                </div>
+                <div class="info flex flex-col justify-between">
+                    <div class="author flex items-center">
+                        <span class="name text-default-text-color text-lg font-semibold">S.N.T</span>
+                        
+                            <span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">LvMAX</span>
+                        
+                    </div>
+                    <div class="meta-info">
+                        <div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2024-10-31 14:35:31</span>
+        <span class="mobile">2024-10-31 14:35:31</span>
+        <span class="hover-info">Created</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2024-10-31 09:29:55</span>
+            <span class="mobile">2024-10-31 09:29:55</span>
+            <span class="hover-info">Updated</span>
+        </span>
+    
+
+    
+        <span class="article-categories article-meta-item">
+            <i class="fa-regular fa-folders"></i>&nbsp;
+            <ul>
+                
+                
+                    
+                        
+                        <li>
+                            <a href="/categories/%E7%BD%91%E7%BB%9C%E6%8A%80%E6%9C%AF/">网络技术</a>&nbsp;
+                        </li>
+                    
+                    
+                
+            </ul>
+        </span>
+    
+    
+        <span class="article-tags article-meta-item">
+            <i class="fa-regular fa-tags"></i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/%E9%82%AE%E4%BB%B6/">邮件</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/SPF/">SPF</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+    
+
+    
+    
+    
+    
+</div>
+
+                    </div>
+                </div>
+            </div>
+        
+
+        
+
+
+        <div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+            <h1 id="SPF介绍"><a href="#SPF介绍" class="headerlink" title="SPF介绍"></a>SPF介绍</h1><p>spf是一种用于防止电子邮件伪造得技术，旨在确保只有授权的发送者才能适用特定的域名发送电子邮件，它也是邮件系统的一种安全机制，它的内容被写入DNS的TXT类型记录中。通过SPF记录，域名所有者可以指定哪些IP地址或服务器被授权代表该域名发送电子邮件。</p>
+<ol>
+<li>防止伪造邮件地址：SPF通过验证发件人的IP地址是否被包含在SPF记录中，来防止他人伪造你的邮件地址发送垃圾邮件或进行网络钓鱼攻击。</li>
+<li>提升邮件可信度：对于通过了SPF验证的邮件，接收邮件的服务器会将其视为更可信的邮件，从而提高邮件的送达率和打开率。</li>
+<li>减少垃圾邮件：通过SPF验证，可以有效地过滤掉大量伪造邮件地址的垃圾邮件，减轻邮件服务器的负担。</li>
+</ol>
+<h2 id="判断是否使用了spf"><a href="#判断是否使用了spf" class="headerlink" title="判断是否使用了spf"></a>判断是否使用了spf</h2><p><strong>Windows：</strong></p>
+<ol>
+<li>输入<code>nslookup -type=txt 域名</code>命令，其中“域名”是你想要查询SPF记录的域名。例如，如果你的邮件地址是<a class="link"   href="mailto:&#49;&#101;&#120;&#97;&#109;&#112;&#x6c;&#101;&#64;&#116;&#x65;&#115;&#x74;&#x2e;&#x63;&#111;&#x6d;&#x31;" >&#49;&#101;&#120;&#97;&#109;&#112;&#x6c;&#101;&#64;&#116;&#x65;&#115;&#x74;&#x2e;&#x63;&#111;&#x6d;&#x31; <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>，那么你应该查询的域名就是1test.com1。</li>
+<li>执行命令后，命令提示符会返回该域名的TXT记录，其中就包含了SPF记录（如果有的话）。SPF记录通常以1v&#x3D;spf11开头。</li>
+</ol>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407111514131.png"
+                     
+                ></p>
+<p><strong>Linux：</strong><code>dig -t txt 域名</code></p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407111614082.png"
+                     
+                ></p>
+<h2 id="在线spf检查，工具示例"><a href="#在线spf检查，工具示例" class="headerlink" title="在线spf检查，工具示例"></a>在线spf检查，工具示例</h2><p><a class="link"   target="_blank" rel="noopener" href="https://powerdmarc.com/zh/spf-record-lookup/" >https://powerdmarc.com/zh/spf-record-lookup/ <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407111626338.png"
+                     
+                ></p>
+<h2 id="机制（Mechanisms）"><a href="#机制（Mechanisms）" class="headerlink" title="机制（Mechanisms）"></a>机制（Mechanisms）</h2><p>可以看到之前的图片的<code>v=xxxx include:xxx</code>，这些都是SPF记录通过一系列机制来指定哪些邮件服务器或IP地址被授权发送邮件的机制。以下是一些常用的机制：</p>
+<ol>
+<li><strong>include</strong></li>
+</ol>
+<ul>
+<li>用途：允许一个SPF记录包含（引用）另一个域名的SPF记录。</li>
+<li>示例：<code>include:spf.example.com</code></li>
+</ul>
+<ol start="2">
+<li><strong>a</strong></li>
+</ol>
+<ul>
+<li>用途：根据域名的A记录（IPv4地址）来验证发件人IP地址。</li>
+<li>示例：<code>a</code> 或 <code>a:example.com</code></li>
+</ul>
+<ol start="3">
+<li><strong>mx</strong></li>
+</ol>
+<ul>
+<li>用途：根据域名的MX记录来验证发件人IP地址。MX记录通常指向接收邮件的服务器。</li>
+<li>示例：<code>mx</code> 或 <code>mx:example.com</code></li>
+</ul>
+<ol start="4">
+<li><strong>ip4和ip6</strong></li>
+</ol>
+<ul>
+<li>用途：直接指定IPv4或IPv6地址段，用于验证发件人IP地址。</li>
+<li>示例：<code>ip4:192.0.2.0/24</code> 或 <code>ip6:2001:db8::/32</code></li>
+</ul>
+<ol start="5">
+<li><strong>ptr</strong></li>
+</ol>
+<ul>
+<li>用途：较少使用，因为它依赖于反向DNS查找，这可能不够可靠。</li>
+</ul>
+<ol start="6">
+<li><strong>exist</strong></li>
+</ol>
+<ul>
+<li>用途：验证指定的域名是否存在。这通常与其他机制结合使用。</li>
+</ul>
+<h2 id="修饰符（Modifiers）"><a href="#修饰符（Modifiers）" class="headerlink" title="修饰符（Modifiers）"></a>修饰符（Modifiers）</h2><p>SPF记录还可以包含修饰符，用于改变SPF检查的结果处理方式：</p>
+<ul>
+<li>+（pass）：表示SPF检查通过。</li>
+<li>-（fail）：表示SPF检查失败。</li>
+<li>~（softfail）：表示“软失败”，即SPF检查没有明确通过，但也没有完全失败。</li>
+<li>?（neutral）：表示SPF记录对该IP地址没有明确的允许或拒绝立场。</li>
+</ul>
+<h2 id="终止符（all）"><a href="#终止符（all）" class="headerlink" title="终止符（all）"></a>终止符（all）</h2><p>用途：<code>all</code> 机制用于终止SPF记录，并指定默认的处理方式。<br>示例：<code>-all</code> 表示如果前面的机制都没有匹配，则视为SPF检查失败；<code>~all</code> 表示软失败；<code>?all</code> 表示中立。</p>
+<p><strong>示例：</strong></p>
+<div class="highlight-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">v=spf1 mx a:mail.example.com ip4:192.0.2.1/32 include:spf.anotherservice.com ~all</span><br></pre></td></tr></table></figure></div>
+
+<p>SPF记录指定了多种机制和修饰符，包括使用MX记录、指定A记录、直接指定IPv4地址段、包含另一个域名的SPF记录，并以软失败作为默认处理方式。</p>
+<h1 id="邮件钓鱼演练"><a href="#邮件钓鱼演练" class="headerlink" title="邮件钓鱼演练"></a>邮件钓鱼演练</h1><h2 id="无SPF攻击利用方式"><a href="#无SPF攻击利用方式" class="headerlink" title="无SPF攻击利用方式"></a>无SPF攻击利用方式</h2><p>这里推荐一个没有spf的邮箱网站便于演练</p>
+<p><a class="link"   target="_blank" rel="noopener" href="https://www.linshi-email.com/" >https://www.linshi-email.com/ <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></p>
+<p><code>nslookup -type=txt iubridge.com</code>，对邮件系统的站点此时也没有</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121437392.png"
+                     
+                ></p>
+<p>使用 <code>nslookup -type=txt linshi-email.com</code> 对站点进行检测，也没有spf验证</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407111648386.png"
+                     
+                ></p>
+<p>使用kali的swaks进行伪造发送邮件 ，由于该临时邮箱没有使用spf，所以可以直接使用该邮箱发送邮件</p>
+<p><strong>命令举例：</strong></p>
+<div class="highlight-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">swaks --to 10xxxxxxx9@qq.com（需要钓鱼的邮箱）  --from wangdun@iubridge.com（临时邮件）  --ehlo qq.com  --body &#x27;由于系统故障，导致密 码丢失，请 点击如下链接登录平台修改密码。https://xiaoyus.cc&#x27;  --header &quot;Subject: 系统故障&quot;</span><br></pre></td></tr></table></figure></div>
+
+<p>其中</p>
+<blockquote>
+<p>–to &#x2F;&#x2F;收件人邮箱地址<br>–from <a class="link"   href="mailto:&#x74;&#101;&#115;&#116;&#x40;&#x71;&#x71;&#46;&#x63;&#111;&#109;" >&#x74;&#101;&#115;&#116;&#x40;&#x71;&#x71;&#46;&#x63;&#111;&#109; <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a> &#x2F;&#x2F;发件人邮箱；<br>–ehlo qq.com &#x2F;&#x2F;伪造邮件ehlo头，即是发件人邮箱的域名。提供身份认证，比如目标是qq邮箱，那么就是qq.com，目标是163那么就是163.com<br>–body “<a class="link"   target="_blank" rel="noopener" href="http://www.baidu.com/" >http://www.baidu.com <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>“ &#x2F;&#x2F;引号中的内容即为邮件正文；<br>–header “Subject:hello” &#x2F;&#x2F;邮件头信息，subject为邮件标题<br>–data .&#x2F;Desktop&#x2F;email.txt &#x2F;&#x2F;将正常源邮件的内容保存成TXT文件，再作为正常邮件发送</p>
+</blockquote>
+<p>发送成功</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407112020619.png"
+                     
+                ></p>
+<p>qq邮箱会提醒这个身份不安全（也可以绕过），此时你点击了这个链接，你就危险了</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407112013325.png"
+                     
+                ></p>
+<p>163网易邮箱大师没有安全提示，各个厂商算法不同吧</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407112017905.png"
+                     
+                ></p>
+<p><strong>Tips：添加附件</strong></p>
+<div class="highlight-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--attach   XX.docx</span><br></pre></td></tr></table></figure></div>
+
+<h2 id="有SPF（绕过）"><a href="#有SPF（绕过）" class="headerlink" title="有SPF（绕过）"></a>有SPF（绕过）</h2><p>案例，使用<a class="link"   href="mailto:&#x78;&#120;&#x78;&#50;&#x33;&#x33;&#x33;&#x40;&#113;&#113;&#46;&#99;&#111;&#109;" >&#x78;&#120;&#x78;&#50;&#x33;&#x33;&#x33;&#x40;&#113;&#113;&#46;&#99;&#111;&#109; <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a> （临时qq邮箱）向对目标<a class="link"   href="mailto:&#120;&#120;&#120;&#120;&#x78;&#120;&#x39;&#57;&#57;&#x39;&#x40;&#49;&#x36;&#51;&#46;&#99;&#111;&#x6d;" >&#120;&#120;&#120;&#120;&#x78;&#120;&#x39;&#57;&#57;&#x39;&#x40;&#49;&#x36;&#51;&#46;&#99;&#111;&#x6d; <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a>进行钓鱼</p>
+<div class="highlight-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">swaks --to xxxxxx9999@163.com  --from xxx2333@qq.com   --ehlo qq.com  --body &#x27;由于系统故障，导致密 码丢失，请点击如下链接登录平台修改密码。https://xiaoyus.cc&#x27;  --header &quot;Subject: 系统故障&quot;</span><br></pre></td></tr></table></figure></div>
+
+<blockquote>
+<p>–au : 使用这个参数指定你发送邮件的用户名（一般就是发送者的邮箱账号）<br>–ap : 你的授权码</p>
+</blockquote>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121412466.png"
+                     
+                ></p>
+<p>此时你就需要把你的钓鱼邮箱开启POP3&#x2F;SMTP服务，如下图</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121413354.png"
+                     
+                ></p>
+<p>注意开启这些服务之后会出现一个<strong>授权码</strong>，用到<code>-ap</code>参数，此时就可以进行发送了进行测试，payload如下：</p>
+<div class="highlight-container" data-rel="Plaintext"><figure class="iseeu highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">swaks -from  xxxxxxx@163.com --body &#x27;this is a hacker email!&#x27; --to xxxxxx@qq.com --server smtp.163.com -p 25 -ap 你的密码/授权码 -au yxy350488@163.com</span><br></pre></td></tr></table></figure></div>
+
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121418507.png"
+                     
+                ></p>
+<p>发送成功，查看该邮件</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121423982.png"
+                     
+                ></p>
+<p>可见如果你泄露了自己的SMTP授权码，那么黑客就可以用这个授权码模拟你的qq&#x2F;163&#x2F;腾讯邮箱，这些有spf的官方邮箱对你进行邮件钓鱼，如果你点了这个链接，那么你就危险了</p>
+<p><img  
+                     lazyload
+                     src="/images/loading.svg"
+                     data-src="/uploads/images/%E6%B5%85%E8%B0%88%E9%AA%87%E5%AE%A2%E6%98%AF%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8SPF%E6%9C%BA%E5%88%B6%E8%BF%9B%E8%A1%8C%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E7%9A%84/202407121429326.png"
+                     
+                ></p>
+<p>下面是常见的邮件服务器</p>
+<table>
+<thead>
+<tr>
+<th align="center">发信邮箱</th>
+<th align="center">服务器地址</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">qq &#x2F; foxmail</td>
+<td align="center">smtp.qq.com:465</td>
+</tr>
+<tr>
+<td align="center">网易</td>
+<td align="center">POP3服务器: pop.126.com</td>
+</tr>
+<tr>
+<td align="center">网易</td>
+<td align="center">SMTP服务器: smtp.126.com:465</td>
+</tr>
+<tr>
+<td align="center">网易</td>
+<td align="center">IMAP服务器: imap.126.com</td>
+</tr>
+<tr>
+<td align="center">新浪</td>
+<td align="center">pop.sina.com</td>
+</tr>
+<tr>
+<td align="center">新浪</td>
+<td align="center">smtp.sina.com</td>
+</tr>
+<tr>
+<td align="center">新浪</td>
+<td align="center">imap.sina.com</td>
+</tr>
+<tr>
+<td align="center">电信189</td>
+<td align="center">smtp.189.cn:465</td>
+</tr>
+<tr>
+<td align="center">电信21cn</td>
+<td align="center">smtp.21cn.com:465</td>
+</tr>
+</tbody></table>
+<h1 id="企业应该如何防护？"><a href="#企业应该如何防护？" class="headerlink" title="企业应该如何防护？"></a>企业应该如何防护？</h1><p>除了使用SPF等技术来防止伪造邮件外，还可以采取以下措施来防御钓鱼邮件：</p>
+<ol>
+<li>用户教育：教育员工识别钓鱼邮件的特征，如拼写错误、紧急请求、来自未知发件人的邮件等。</li>
+<li>邮件网关安全：使用先进的邮件网关安全解决方案来过滤垃圾邮件和钓鱼邮件。</li>
+<li>多因素身份验证：在关键账户上启用多因素身份验证，即使攻击者获得了用户的密码，他们仍然需要第二个验证因素才能访问账户。</li>
+<li>安全软件：在终端设备上安装反病毒和反间谍软件，以防止恶意软件通过钓鱼邮件传播。</li>
+</ol>
+<h1 id="个人该如何防护？"><a href="#个人该如何防护？" class="headerlink" title="个人该如何防护？"></a>个人该如何防护？</h1><p>个人网络安全防护需提升安全意识，采用强密码并定期更换，保持系统及软件更新，警惕电子邮件风险，利用VPN保护公共网络下的数据传输，确保移动设备安全，定期备份并加密重要数据，同时重视物理安全，锁好设备并锁屏以防未授权访问。</p>
+<h1 id="免责声明"><a href="#免责声明" class="headerlink" title="免责声明"></a>免责声明</h1><blockquote>
+<p>本文所提供的信息、技术示例、操作指导及任何相关内容均旨在教育和分享目的，并不构成专业法律、技术或安全建议。本教程仅供钓鱼演练，请误对真实邮箱进行钓鱼，所造成的任何后果和法律责任，自行承担，与作者无关</p>
+</blockquote>
+<blockquote>
+<p>转自：<a class="link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/xiaoyus/p/18418647#_label0" >https://www.cnblogs.com/xiaoyus/p/18418647#_label0 <i class="fa-regular fa-arrow-up-right-from-square fa-sm"></i></a></p>
+</blockquote>
+
+        </div>
+
+        
+
+        
+            <ul class="post-tags-box text-lg mt-1.5 flex-wrap justify-center flex md:hidden">
+                
+                    <li class="tag-item mx-0.5">
+                        <a href="/tags/%E9%82%AE%E4%BB%B6/">#邮件</a>&nbsp;
+                    </li>
+                
+                    <li class="tag-item mx-0.5">
+                        <a href="/tags/SPF/">#SPF</a>&nbsp;
+                    </li>
+                
+            </ul>
+        
+
+        
+
+        
+            <div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+                
+                    <div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+                        <a class="prev"
+                        rel="prev"
+                        href="/archives/e316349cddf6.html"
+                        >
+                            <span class="left arrow-icon flex justify-center items-center">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </span>
+                            <span class="title flex justify-center items-center">
+                                <span class="post-nav-title-item">MSF（Metasploit Framework）详细教程</span>
+                                <span class="post-nav-item">Prev posts</span>
+                            </span>
+                        </a>
+                    </div>
+                
+                
+                    <div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+                        <a class="next"
+                        rel="next"
+                        href="/archives/30e3509a41f9.html"
+                        >
+                            <span class="title flex justify-center items-center">
+                                <span class="post-nav-title-item">Nmap中文指导手册</span>
+                                <span class="post-nav-item">Next posts</span>
+                            </span>
+                            <span class="right arrow-icon flex justify-center items-center">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </span>
+                        </a>
+                    </div>
+                
+            </div>
+        
+
+
+        
+    </div>
+
+    
+        <div class="toc-content-container">
+            <div class="post-toc-wrap">
+    <div class="post-toc">
+        <div class="toc-title">On this page</div>
+        <div class="page-title">浅谈骇客是如何利用SPF机制进行邮件钓鱼的</div>
+        <ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#SPF%E4%BB%8B%E7%BB%8D"><span class="nav-text">SPF介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E4%BD%BF%E7%94%A8%E4%BA%86spf"><span class="nav-text">判断是否使用了spf</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E7%BA%BFspf%E6%A3%80%E6%9F%A5%EF%BC%8C%E5%B7%A5%E5%85%B7%E7%A4%BA%E4%BE%8B"><span class="nav-text">在线spf检查，工具示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%BA%E5%88%B6%EF%BC%88Mechanisms%EF%BC%89"><span class="nav-text">机制（Mechanisms）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E9%A5%B0%E7%AC%A6%EF%BC%88Modifiers%EF%BC%89"><span class="nav-text">修饰符（Modifiers）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%88%E6%AD%A2%E7%AC%A6%EF%BC%88all%EF%BC%89"><span class="nav-text">终止符（all）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%82%AE%E4%BB%B6%E9%92%93%E9%B1%BC%E6%BC%94%E7%BB%83"><span class="nav-text">邮件钓鱼演练</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A0SPF%E6%94%BB%E5%87%BB%E5%88%A9%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="nav-text">无SPF攻击利用方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%89SPF%EF%BC%88%E7%BB%95%E8%BF%87%EF%BC%89"><span class="nav-text">有SPF（绕过）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%81%E4%B8%9A%E5%BA%94%E8%AF%A5%E5%A6%82%E4%BD%95%E9%98%B2%E6%8A%A4%EF%BC%9F"><span class="nav-text">企业应该如何防护？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%AA%E4%BA%BA%E8%AF%A5%E5%A6%82%E4%BD%95%E9%98%B2%E6%8A%A4%EF%BC%9F"><span class="nav-text">个人该如何防护？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%8D%E8%B4%A3%E5%A3%B0%E6%98%8E"><span class="nav-text">免责声明</span></a></li></ol>
+
+    </div>
+</div>
+        </div>
+    
+</div>
+
+
+
+                
+
+            </div>
+
+            
+
+        </div>
+
+        <div class="main-content-footer">
+            <footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+            2024&nbsp;&nbsp;🤔&nbsp;&nbsp;<a href="/">S.N.T</a>
+            
+        </div>
+        
+        
+        
+        
+        
+        
+        
+    </div>  
+</footer>
+        </div>
+    </div>
+
+    
+        <div class="post-tools">
+            <div class="post-tools-container">
+    <ul class="article-tools-list">
+        <!-- TOC aside toggle -->
+        
+            <li class="right-bottom-tools page-aside-toggle">
+                <i class="fa-regular fa-outdent"></i>
+            </li>
+        
+
+        <!-- go comment -->
+        
+    </ul>
+</div>
+
+        </div>
+    
+
+    <div class="right-side-tools-container">
+        <div class="side-tools-container">
+    <ul class="hidden-tools-list">
+        <li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+            <i class="fa-regular fa-magnifying-glass-plus"></i>
+        </li>
+
+        <li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+            <i class="fa-regular fa-magnifying-glass-minus"></i>
+        </li>
+
+        <li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+            <i class="fa-regular fa-moon"></i>
+        </li>
+
+        <!-- rss -->
+        
+            <li class="right-bottom-tools rss flex justify-center items-center">
+                <a class="flex justify-center items-center"
+                   href="/atom.xml"
+                   target="_blank"
+                >
+                <i class="fa-regular fa-rss"></i>
+                </a>
+            </li>
+        
+
+        
+
+        <li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+            <i class="fa-regular fa-arrow-down"></i>
+        </li>
+    </ul>
+
+    <ul class="visible-tools-list">
+        <li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+            <i class="fa-regular fa-cog fa-spin"></i>
+        </li>
+        
+            <li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+                <i class="arrow-up fas fa-arrow-up"></i>
+                <span class="percent"></span>
+            </li>
+        
+        
+    </ul>
+</div>
+
+    </div>
+
+    <div class="image-viewer-container">
+    <img src="">
+</div>
+
+
+    
+
+</main>
+
+
+    
+<script src="/js/libs/Swup.min.js"></script>
+
+<script src="/js/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    const swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+</script>
+
+
+
+
+
+
+
+<script src="/js/tools/imageViewer.js" type="module"></script>
+
+<script src="/js/utils.js" type="module"></script>
+
+<script src="/js/main.js" type="module"></script>
+
+<script src="/js/layouts/navbarShrink.js" type="module"></script>
+
+<script src="/js/tools/scrollTopBottom.js" type="module"></script>
+
+<script src="/js/tools/lightDarkSwitch.js" type="module"></script>
+
+<script src="/js/layouts/categoryList.js" type="module"></script>
+
+
+
+
+
+    
+<script src="/js/tools/codeBlock.js" type="module"></script>
+
+
+
+
+    
+<script src="/js/layouts/lazyload.js" type="module"></script>
+
+
+
+
+
+
+  
+<script src="/js/libs/Typed.min.js"></script>
+
+  
+<script src="/js/plugins/typed.js" type="module"></script>
+
+
+
+
+
+
+
+
+
+
+
+    
+<script src="/js/tools/tocToggle.js" type="module" data-swup-reload-script=""></script>
+
+<script src="/js/layouts/toc.js" type="module" data-swup-reload-script=""></script>
+
+<script src="/js/plugins/tabs.js" type="module" data-swup-reload-script=""></script>
+
+
+
+
+<script src="/js/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+<script src="/js/layouts/essays.js" type="module" data-swup-reload-script=""></script>
+
+
+
+
+</body>
+</html>
